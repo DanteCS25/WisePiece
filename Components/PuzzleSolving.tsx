@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ImageBackground, StyleSheet, TouchableOpacity, Text, Alert, ScrollView, Pressable, Linking, ActivityIndicator } from 'react-native';
+import { View, ImageBackground, StyleSheet, TouchableOpacity, Text, Alert, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { analyzeImage } from '../Services/AI-Service';
@@ -132,25 +132,22 @@ const PuzzleSolving = () => {
     }
   };
 
-  const fetchWikipediaSummary = async (query: string) => {
-    if (!query) {
-      return null;
-    }
+  const handleAddFavorite = async () => {
     try {
-      const response = await axios.get(
-        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`
-      );
-      if (response.data && response.data.extract) {
-        return response.data.extract;
-      }
-    } catch (error: any) {
-      if (error.response && error.response.status === 404) {
-        console.warn(`No Wikipedia page found for: ${query}`);
-      } else {
-        console.error('Error fetching Wikipedia summary:', error);
-      }
+      await addFavoritePuzzle(imageUri, 'My Puzzle'); // Provide a puzzle name
+      Alert.alert('Success', 'Puzzle added to favorites!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add to favorites');
     }
-    return null;
+  };
+
+  const handleSaveCompletedPuzzle = async () => {
+    try {
+      await saveCompletedPuzzle(imageUri, 'My Puzzle'); // Provide a puzzle name
+      Alert.alert('Success', 'Puzzle added to completed puzzles!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add to completed puzzles');
+    }
   };
 
   const handleAnalysePuzzle = async () => {
@@ -183,43 +180,50 @@ const PuzzleSolving = () => {
         }
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.error?.message || error.message || 'Failed to analyze the image');
+      Alert.alert('Error', error.message || 'Failed to analyze the image');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const handleAddFavorite = async () => {
-    try {
-      await addFavoritePuzzle(imageUri, 'My Puzzle'); // Provide a puzzle name
-      Alert.alert('Success', 'Puzzle added to favorites!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to add to favorites');
+  const fetchWikipediaSummary = async (query: string) => {
+    if (!query) {
+      return null;
     }
-  };
-
-  const handleSaveCompletedPuzzle = async () => {
     try {
-      await saveCompletedPuzzle(imageUri, 'My Puzzle'); // Provide a puzzle name
-      Alert.alert('Success', 'Puzzle added to completed puzzles!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to add to completed puzzles');
+      const response = await axios.get(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`
+      );
+      if (response.data && response.data.extract) {
+        return response.data.extract;
+      }
+    } catch (error: any) { // Type assertion added here
+      if (error.response && error.response.status === 404) {
+        console.warn(`No Wikipedia page found for: ${query}`);
+      } else {
+        console.error('Error fetching Wikipedia summary:', error);
+      }
     }
+    return null;
   };
 
   return (
-      <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <ImageBackground
+        source={require('../assets/images/MainBackgroundBlur.png')} // Replace with your actual background image URL
+        style={styles.background}
+        imageStyle={{ opacity: 0.5 }} // Set the background image opacity
+      >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-left" size={30} color="#8B4513" />
+            <Icon name="arrow-left" size={30} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.title}>Start Solving</Text>
           <TouchableOpacity onPress={handleAddFavorite}>
-            <Icon name="heart" size={30} color="#FF6347" />
+            <Icon name="heart" size={30} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        {/* Step-by-Step Guide */}
         <View style={styles.instructionsContainer}>
           <Text style={styles.instructionsTitle}>How to Build the Puzzle:</Text>
           <Text style={styles.instructionsText}>1. Select a puzzle piece from the options below.</Text>
@@ -249,7 +253,6 @@ const PuzzleSolving = () => {
           </View>
         )}
 
-        {/* Puzzle Board */}
         <ViewShot ref={viewShotRef} options={{ format: 'jpg', quality: 0.9 }}>
           <View style={[styles.puzzleBoard, { width: puzzleBoardSize, height: puzzleBoardSize }]}>
             {pieces.map((piece) => (
@@ -289,7 +292,7 @@ const PuzzleSolving = () => {
           onPress={handleSaveCompletedPuzzle}
           disabled={!isPuzzleComplete} // Disable the button if the puzzle is not complete
         >
-          <Text style={styles.saveButtonText}>Save Completed Puzzle</Text>
+          <Text style={styles.saveButtonText}>Completed Puzzle</Text>
         </TouchableOpacity>
 
         <View style={styles.pieceContainer}>
@@ -322,7 +325,8 @@ const PuzzleSolving = () => {
               </TouchableOpacity>
             ))}
         </View>
-      </ScrollView>
+      </ImageBackground>
+    </ScrollView>
   );
 };
 
@@ -331,7 +335,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5F5DC',
+  },
+  background: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1e1e1e', // Dark charcoal tone for background
   },
   header: {
     flexDirection: 'row',
@@ -344,69 +353,41 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#8B4513',
+    color: '#fff',
     fontFamily: 'serif',
   },
   instructionsContainer: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-    backgroundColor: '#FFF8DC',
-    borderRadius: 5,
+    marginTop: 50,
+    marginBottom: 10,
+    width: 300,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Glass effect for level container
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     paddingVertical: 10,
   },
   instructionsTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#8B4513',
+    color: '#fff',
     marginBottom: 5,
     fontFamily: 'serif',
+    paddingLeft: 18,
+    paddingTop: 10,
+    paddingBottom: 10
   },
   instructionsText: {
-    fontSize: 16,
-    color: '#555',
-    marginBottom: 5,
-  },
-  puzzleBoard: {
-    marginTop: 20,
-    position: 'relative',
-    borderWidth: 5,
-    borderColor: '#C0A080',
-  },
-  puzzlePiece: {
-    position: 'absolute',
-    borderWidth: 1,
-    borderColor: '#C0A080',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  pieceContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  puzzlePieceBottom: {
-    margin: 5,
-    borderWidth: 1,
-    borderColor: '#D4AF37',
-    overflow: 'hidden',
-  },
-  selectedPiece: {
-    borderColor: '#FF6347',
-    borderWidth: 2,
-  },
-  imageBackground: {
-    position: 'absolute',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
+    fontSize: 12,
+    color: '#fff',
+    marginBottom: 10,
+    paddingLeft: 18,
+    paddingRight: 18
   },
   analyzeButton: {
     marginTop: 20,
+    marginBottom: 20,
     padding: 10,
-    backgroundColor: '#8B4513',
+    backgroundColor: '#CE662A',
     borderRadius: 5,
   },
   analyzeButtonText: {
@@ -436,10 +417,48 @@ const styles = StyleSheet.create({
   entityContainer: {
     marginBottom: 15,
   },
-  saveButton: {
+  puzzleBoard: {
     marginTop: 20,
+    position: 'relative',
+    borderWidth: 5,
+    borderColor: '#C0A080',
+  },
+  puzzlePiece: {
+    position: 'absolute',
+    borderWidth: 1,
+    borderColor: '#C0A080',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  pieceContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  puzzlePieceBottom: {
+    margin: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    overflow: 'hidden',
+  },
+  selectedPiece: {
+    borderColor: '#FF6347',
+    borderWidth: 2,
+  },
+  imageBackground: {
+    position: 'absolute',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  saveButton: {
+    marginTop: 30,
+    marginBottom: 20,
     padding: 10,
-    backgroundColor: '#8B4513',
+    backgroundColor: '#CE662A',
     borderRadius: 5,
   },
   saveButtonText: {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ImageBackground } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImageAndSaveData } from '../service'; // Adjust the import path as necessary
 
@@ -37,29 +37,42 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Settings</Text>
-      <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.image} />
-        ) : (
-          <Text style={styles.imagePickerText}>Pick an image</Text>
-        )}
-      </TouchableOpacity>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter name"
-        value={name}
-        onChangeText={setName}
-      />
-      <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Save</Text>
-      </TouchableOpacity>
-    </View>
+    <ImageBackground
+    source={require('../assets/images/MainBackground.jpg')} // Assuming the vintage wood background image is located in assets folder
+    style={styles.background}
+      imageStyle={{ opacity: 0.4 }} // Set the background image opacity
+    >
+      <View style={styles.container}>
+        <Text style={styles.header}>Add Puzzles</Text>
+        <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.image} />
+          ) : (
+            <Text style={styles.imagePickerText}>Pick an image</Text>
+          )}
+        </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter name"
+          placeholderTextColor='rgba(54, 51, 46, 0.5)'
+          value={name}
+          onChangeText={setName}
+        />
+        <TouchableOpacity style={styles.buttonPrimary} onPress={handleSave}>
+          <Text style={styles.buttonPrimaryText}>Upload Puzzle</Text>
+        </TouchableOpacity>
+      </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1e1e1e', // Dark charcoal tone for background
+  },
   container: {
     flex: 1,
     padding: 20,
@@ -70,18 +83,21 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#ffffff',
   },
   imagePicker: {
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Glass effect for image picker
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   imagePickerText: {
-    color: '#888',
+    color: '#F3EBD8',
   },
   image: {
     width: 150,
@@ -89,23 +105,27 @@ const styles = StyleSheet.create({
     borderRadius: 75,
   },
   input: {
-    width: '100%',
-    height: 40,
-    borderColor: '#ccc',
+    width: 180,
+    height: 45,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     borderWidth: 1,
-    borderRadius: 5,
+    borderRadius: 8,
     paddingHorizontal: 10,
     marginBottom: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Input background to enhance the glass effect
+    color: '#F3EBD8',
   },
-  button: {
-    backgroundColor: '#6200ee',
-    padding: 10,
-    borderRadius: 5,
-    width: '100%',
+  buttonPrimary: {
+    backgroundColor: '#CE662A',
+    paddingVertical: 12,
+    borderRadius: 25,
+    width: 180,
     alignItems: 'center',
+    marginVertical: 30,
   },
-  buttonText: {
+  buttonPrimaryText: {
     color: '#ffffff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
