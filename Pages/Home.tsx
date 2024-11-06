@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import NavBar from '../Components/Navbar';
 
-function HomeScreen() {
+const HomeScreen: React.FC = () => {
+  const [userInfo, setUserInfo] = useState<{ name: string; email: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
   return (
     <View style={styles.container}>
       <Text>Welcome to PieceWise!</Text>
       <Text>This is your puzzle building app.</Text>
-      <NavBar/>
     </View>
   );
-}
+};
 
 export default HomeScreen;
 

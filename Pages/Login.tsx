@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Animated, Easing, Dimensions, TouchableOpacity,
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
-import { loginUser } from '../service'; // Adjust the import path as necessary
+import { loginUser } from '../service';
 
 const { width, height } = Dimensions.get('window');
 
@@ -65,9 +65,9 @@ const Login: React.FC = () => {
 
   return (
     <ImageBackground
-      source={require('../assets/images/MainBackground.jpg')} // Replace with your actual background image URL
+      source={require('../assets/images/MainBackground.jpg')}
       style={styles.background}
-      imageStyle={{ opacity: 0.5 }} // Set the background image opacity
+      imageStyle={{ opacity: 0.5 }}
     >
       <Animated.View style={[styles.container, { transform: [{ translateX: loginTransform }] }]}>
         <View style={styles.glassCardContainer}>

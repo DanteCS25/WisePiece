@@ -1,9 +1,7 @@
-// service.ts
-import { auth, firestore, storage } from './firebase.config'; // Update this path if necessary
+import { auth, db } from './firebase.config';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { collection, addDoc, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Alert } from 'react-native';
-import { db } from './firebase.config'; // Ensure db is exported from your firebase.config
 
 export const signupUser = async (
   email: string,
@@ -15,21 +13,20 @@ export const signupUser = async (
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    console.log('User signed up with UID:', user.uid);
 
-    // Save user information to Firestore with user UID as document ID
-    await setDoc(doc(firestore, 'users', user.uid), {
+    await setDoc(doc(db, 'users', user.uid), {
       uid: user.uid,
       email: user.email,
       name: name,
-      createdAt: new Date(),
+      createdAt: serverTimestamp(), // Use Firestore's server timestamp
     });
-
-    console.log('User document created with ID:', user.uid);
-
+    console.log('User document created successfully for:', user.uid);
     Alert.alert('Success', 'User account created successfully');
     onSuccess();
   } catch (error: any) {
     const errorMessage = error.message;
+    console.error('Signup error:', errorMessage);
     onError(errorMessage);
   }
 };
@@ -40,17 +37,46 @@ export const loginUser = (
   onSuccess: (isAdmin: boolean) => void,
   onError: (message: string) => void
 ) => {
+  // Admin login check
+  if (email === 'admin@gmail.com' && password === 'adminPassword') {
+    console.log('Admin logged in:', email);
+    Alert.alert('Success', 'Admin logged in successfully');
+    onSuccess(true);
+    return;
+  }
+
   signInWithEmailAndPassword(auth, email, password)
     .then((userCredential) => {
       const user = userCredential.user;
       Alert.alert('Success', 'Logged in successfully');
-      const isAdmin = email === "admin@gmail.com"; // Replace with your admin email logic
+      console.log('User logged in successfully:', user.uid);
+      const isAdmin = email === 'admin@gmail.com';
       onSuccess(isAdmin);
     })
     .catch((error) => {
       const errorMessage = error.message;
+      console.error('Login error:', errorMessage);
       onError(errorMessage);
     });
+};
+
+export const fetchUserData = async (userId: string) => {
+  try {
+    console.log('Fetching data for userId:', userId);
+    const userDocRef = doc(db, 'users', userId);
+    const userSnapshot = await getDoc(userDocRef);
+
+    if (userSnapshot.exists()) {
+      console.log('User data found for userId:', userId);
+      return userSnapshot.data();
+    } else {
+      console.error('No such user document for userId:', userId);
+      throw new Error('No such user document!');
+    }
+  } catch (error) {
+    console.error('Error fetching user data for userId:', userId, error);
+    throw error;
+  }
 };
 
 export const uploadImageAndSaveData = async (
@@ -58,10 +84,10 @@ export const uploadImageAndSaveData = async (
   name: string
 ): Promise<void> => {
   try {
-    // Save image URI and name directly to Firestore
-    await addDoc(collection(firestore, 'puzzle'), {
+    await addDoc(collection(db, 'puzzles'), {
       name: name,
       imageUri: imageUri,
+      createdAt: serverTimestamp(),
     });
     console.log('Data saved successfully to Firestore');
   } catch (error) {
@@ -70,33 +96,17 @@ export const uploadImageAndSaveData = async (
   }
 };
 
-// Function to fetch user data
-export const fetchUserData = async (userId: string) => {
-  try {
-    const userDoc = doc(firestore, 'users', userId);
-    const userSnapshot = await getDoc(userDoc);
-    if (userSnapshot.exists()) {
-      return userSnapshot.data(); // Return user data
-    } else {
-      throw new Error('No such user document!');
-    }
-  } catch (error) {
-    console.error('Error fetching user data:', error);
-    throw error; // Rethrow the error for handling in the calling function
-  }
-};
-
 export const addFavoritePuzzle = async (imageUri: string, puzzleName: string) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('User not logged in');
 
-    // Create a document in the user's collection in Firestore
+    console.log('Adding favorite puzzle for user:', user.uid);
     const userPuzzleCollectionRef = collection(db, 'users', user.uid, 'favoritePuzzles');
     await addDoc(userPuzzleCollectionRef, {
-      name: puzzleName || 'Untitled Puzzle', // Fallback if no name provided
+      name: puzzleName || 'Untitled Puzzle',
       imageUri: imageUri,
-      addedAt: new Date(),
+      addedAt: serverTimestamp(),
     });
 
     console.log('Puzzle added to favorites');
@@ -111,17 +121,33 @@ export const saveCompletedPuzzle = async (imageUri: string, puzzleName: string) 
     const user = auth.currentUser;
     if (!user) throw new Error('User not logged in');
 
-    // Create a document in the user's collection in Firestore
+    console.log('Saving completed puzzle for user:', user.uid);
     const userPuzzleCollectionRef = collection(db, 'users', user.uid, 'completedPuzzles');
     await addDoc(userPuzzleCollectionRef, {
-      name: puzzleName || 'Untitled Puzzle', // Fallback if no name provided
+      name: puzzleName || 'Untitled Puzzle',
       imageUri: imageUri,
-      addedAt: new Date(),
+      addedAt: serverTimestamp(),
     });
 
-    console.log('Puzzle added to complete Puzzle');
+    console.log('Puzzle added to completed puzzles');
   } catch (error: any) {
-    console.error('Error adding puzzle to complete Puzzle:', error.message);
+    console.error('Error adding puzzle to completed puzzles:', error.message);
     throw error;
+  }
+};
+
+const handleLogout = async (navigation: any) => {
+  const user = auth.currentUser; // Check the current user
+  if (!user) {
+    console.error('No authenticated user found');
+    return; // Exit the function if no user is found
+  }
+
+  try {
+    await auth.signOut();
+    console.log('User logged out successfully');
+    navigation.navigate('Login');
+  } catch (error) {
+    console.error('Logout Error:', error);
   }
 };

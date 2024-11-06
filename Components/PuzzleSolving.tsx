@@ -402,16 +402,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#8B4513',
+    color: '#fff',
     fontFamily: 'serif',
   },
   label: {
     fontSize: 16,
-    color: '#555',
+    color: '#CE662A',
   },
   summary: {
     fontSize: 14,
-    color: '#777',
+    color: '#fff',
     marginBottom: 10,
   },
   entityContainer: {

@@ -57,9 +57,9 @@ const Signup: React.FC = () => {
 
   return (
     <ImageBackground
-    source={require('../assets/images/MainBackground.jpg')} // Replace with your actual background image URL
-    style={styles.background}
-      imageStyle={{ opacity: 0.5 }} // Set the background image opacity
+      source={require('../assets/images/MainBackground.jpg')}
+      style={styles.background}
+      imageStyle={{ opacity: 0.5 }}
     >
       <Animated.View style={[styles.container, { transform: [{ translateX: signupTransform }] }]}>
         <View style={styles.glassCardContainer}>
