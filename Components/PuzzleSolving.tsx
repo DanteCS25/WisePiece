@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ImageBackground, StyleSheet, TouchableOpacity, Text, Alert, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, ImageBackground, StyleSheet, TouchableOpacity, Text, Alert, ScrollView, Pressable, ActivityIndicator, Modal } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { analyzeImage } from '../Services/AI-Service';
@@ -7,7 +7,6 @@ import * as FileSystem from 'expo-file-system';
 import ViewShot from 'react-native-view-shot';
 import axios from 'axios';
 import { addFavoritePuzzle, saveCompletedPuzzle } from '../service';
-import auth from '@react-native-firebase/auth';
 
 // Grid size will be determined dynamically based on level
 let gridSize = 3;
@@ -63,6 +62,7 @@ const PuzzleSolving = () => {
   const [webDetectionData, setWebDetectionData] = useState<WebDetectionData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const viewShotRef = useRef<ViewShot | null>(null);
+  const [isImageEnlarged, setIsImageEnlarged] = useState(false);
 
   // Add a new state variable to track if the puzzle is complete
   const [isPuzzleComplete, setIsPuzzleComplete] = useState(false);
@@ -120,8 +120,9 @@ const PuzzleSolving = () => {
         // Check if all pieces are placed
         const allPlaced = updatedPieces.every(piece => piece.isPlaced);
         if (allPlaced) {
-          Alert.alert('Success', 'All pieces placed! You can now save your puzzle.');
+          Alert.alert('Success', 'All pieces placed! Puzzle is complete.');
           setIsPuzzleComplete(true); // Update the state to indicate the puzzle is complete
+          handleSaveCompletedPuzzle(); // Save the completed puzzle to Firestore
         }
 
         return updatedPieces;
@@ -144,8 +145,7 @@ const PuzzleSolving = () => {
   const handleSaveCompletedPuzzle = async () => {
     try {
       await saveCompletedPuzzle(imageUri, 'My Puzzle'); // Provide a puzzle name
-      Alert.alert('Success', 'Puzzle added to completed puzzles!');
-    } catch (error) {
+     } catch (error) {
       Alert.alert('Error', 'Failed to add to completed puzzles');
     }
   };
@@ -197,12 +197,8 @@ const PuzzleSolving = () => {
       if (response.data && response.data.extract) {
         return response.data.extract;
       }
-    } catch (error: any) { // Type assertion added here
-      if (error.response && error.response.status === 404) {
-        console.warn(`No Wikipedia page found for: ${query}`);
-      } else {
+    } catch (error: any) {
         console.error('Error fetching Wikipedia summary:', error);
-      }
     }
     return null;
   };
@@ -210,9 +206,9 @@ const PuzzleSolving = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <ImageBackground
-        source={require('../assets/images/MainBackgroundBlur.png')} // Replace with your actual background image URL
+        source={require('../assets/images/MainBackgroundBlur.png')}
         style={styles.background}
-        imageStyle={{ opacity: 0.5 }} // Set the background image opacity
+        imageStyle={{ opacity: 0.5 }}
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -231,13 +227,46 @@ const PuzzleSolving = () => {
           <Text style={styles.instructionsText}>3. Repeat until all pieces are placed in the correct positions.</Text>
         </View>
 
-        <Pressable onPress={handleAnalysePuzzle} style={styles.analyzeButton} disabled={isAnalyzing}>
-          {isAnalyzing ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.analyzeButtonText}>Analyze Puzzle</Text>
-          )}
-        </Pressable>
+        <TouchableOpacity onPress={() => setIsImageEnlarged(!isImageEnlarged)}>
+          <Modal
+            transparent={true}
+            visible={isImageEnlarged}
+            animationType="fade"
+            onRequestClose={() => setIsImageEnlarged(false)}
+          >
+            <View style={styles.modalBackground}>
+              <TouchableOpacity onPress={() => setIsImageEnlarged(false)} style={styles.enlargedImageContainer}>
+                <Icon
+                  name="close"
+                  size={30}
+                  color="#fff"
+                  style={styles.closeIcon}
+                  onPress={() => setIsImageEnlarged(false)}
+                />
+                <ImageBackground
+                  source={{ uri: imageUri }}
+                  style={styles.enlargedImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            </View>
+          </Modal>
+          <ImageBackground
+            source={{ uri: imageUri }}
+            style={styles.smallImage}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+
+        {isPuzzleComplete && (
+          <Pressable onPress={handleAnalysePuzzle} style={styles.analyzeButton} disabled={isAnalyzing}>
+            {isAnalyzing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.analyzeButtonText}>Analyze Puzzle</Text>
+            )}
+          </Pressable>
+        )}
 
         {webDetectionData && webDetectionData.webEntities && (
           <View style={styles.webDetectionContainer}>
@@ -265,6 +294,7 @@ const PuzzleSolving = () => {
                     left: piece.correctX,
                     width: pieceSize,
                     height: pieceSize,
+                    borderColor: piece.isPlaced ? 'transparent' : '#91897D', // Use different border color for debugging
                   },
                 ]}
                 onPress={() => placePiece(piece.key)}
@@ -272,7 +302,7 @@ const PuzzleSolving = () => {
                 {piece.isPlaced && (
                   <ImageBackground
                     source={{ uri: imageUri }}
-                    style={styles.imageBackground}
+                    style={{ width: pieceSize, height: pieceSize }}
                     imageStyle={{
                       width: puzzleBoardSize,
                       height: puzzleBoardSize,
@@ -286,14 +316,6 @@ const PuzzleSolving = () => {
             ))}
           </View>
         </ViewShot>
-
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleSaveCompletedPuzzle}
-          disabled={!isPuzzleComplete} // Disable the button if the puzzle is not complete
-        >
-          <Text style={styles.saveButtonText}>Completed Puzzle</Text>
-        </TouchableOpacity>
 
         <View style={styles.pieceContainer}>
           {pieces
@@ -313,7 +335,7 @@ const PuzzleSolving = () => {
               >
                 <ImageBackground
                   source={{ uri: imageUri }}
-                  style={styles.image}
+                  style={{ width: pieceSize, height: pieceSize }}
                   imageStyle={{
                     width: puzzleBoardSize,
                     height: puzzleBoardSize,
@@ -334,13 +356,12 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+  },  
   background: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1e1e1e', // Dark charcoal tone for background
+    backgroundColor: '#1e1e1e',
+    width: '100%',
   },
   header: {
     flexDirection: 'row',
@@ -361,7 +382,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     width: 300,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Glass effect for level container
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     paddingVertical: 10,
@@ -382,6 +403,34 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingLeft: 18,
     paddingRight: 18
+  },
+  smallImage: {
+    width: 100,
+    height: 100,
+    marginVertical: 20,
+  },
+  enlargedImage: {
+    width: 300,
+    height: 300,
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  enlargedImageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeIcon: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: 5,
+    borderRadius: 15,
   },
   analyzeButton: {
     marginTop: 20,
@@ -420,8 +469,6 @@ const styles = StyleSheet.create({
   puzzleBoard: {
     marginTop: 20,
     position: 'relative',
-    borderWidth: 5,
-    borderColor: '#C0A080',
   },
   puzzlePiece: {
     position: 'absolute',
@@ -435,7 +482,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginTop: 20,
   },
   puzzlePieceBottom: {
     margin: 5,
@@ -453,18 +499,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-  },
-  saveButton: {
-    marginTop: 30,
-    marginBottom: 20,
-    padding: 10,
-    backgroundColor: '#CE662A',
-    borderRadius: 5,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
 });
 

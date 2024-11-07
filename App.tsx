@@ -33,7 +33,7 @@ export type RootTabParamList = {
     Profile: undefined;
 };
 
-const Stack = createStackNavigator<RootStackParamList>();
+const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
 const HomeTabs = () => {

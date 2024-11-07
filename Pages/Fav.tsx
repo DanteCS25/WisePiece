@@ -4,6 +4,7 @@ import { auth } from '../firebase.config';
 import { collection, getDocs } from 'firebase/firestore';
 import { firestore } from '../firebase.config';
 
+
 const Fav: React.FC = () => {
   const [completedPuzzles, setCompletedPuzzles] = useState<any[]>([]);
   const [favoritePuzzles, setFavoritePuzzles] = useState<any[]>([]);
