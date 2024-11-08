@@ -4,6 +4,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
 import { loginUser } from '../service';
+import CustomAlert from '../Components/CustomAlert'; // Import the custom alert
 
 const { width, height } = Dimensions.get('window');
 
@@ -14,6 +15,9 @@ const Login: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
 
   useFocusEffect(() => {
     Animated.timing(animation, {

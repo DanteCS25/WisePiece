@@ -1,43 +1,50 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Image, ImageBackground } from 'react-native';
-import { auth } from '../firebase.config';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity, ImageBackground } from 'react-native';
+import { firestore, auth } from '../firebase.config';
 import { collection, getDocs } from 'firebase/firestore';
-import { firestore } from '../firebase.config';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../App';
 
+type FavScreenNavigationProp = StackNavigationProp<RootStackParamList, 'LevelSelection'>;
 
 const Fav: React.FC = () => {
   const [completedPuzzles, setCompletedPuzzles] = useState<any[]>([]);
   const [favoritePuzzles, setFavoritePuzzles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<'completed' | 'favorite'>('completed');
+  const navigation = useNavigation<FavScreenNavigationProp>();
 
-  useEffect(() => {
-    const fetchPuzzles = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          // Fetch completed puzzles
-          const completedPuzzleCollectionRef = collection(firestore, 'users', user.uid, 'completedPuzzles');
-          const completedPuzzleSnapshot = await getDocs(completedPuzzleCollectionRef);
-          const completedPuzzleList = completedPuzzleSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setCompletedPuzzles(completedPuzzleList);
-
-          // Fetch favorite puzzles
-          const favoritePuzzleCollectionRef = collection(firestore, 'users', user.uid, 'favoritePuzzles');
-          const favoritePuzzleSnapshot = await getDocs(favoritePuzzleCollectionRef);
-          const favoritePuzzleList = favoritePuzzleSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setFavoritePuzzles(favoritePuzzleList);
-        } catch (error) {
-          console.error('Error fetching puzzles:', error);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
+  const fetchPuzzles = async () => {
+    setLoading(true);
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        console.error('User is not authenticated');
+        return;
       }
-    };
 
-    fetchPuzzles();
-  }, []);
+      const completedPuzzleCollectionRef = collection(firestore, 'users', userId, 'completedPuzzles');
+      const completedPuzzleSnapshot = await getDocs(completedPuzzleCollectionRef);
+      const completedPuzzleList = completedPuzzleSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCompletedPuzzles(completedPuzzleList);
+
+      const favoritePuzzleCollectionRef = collection(firestore, 'users', userId, 'favoritePuzzles');
+      const favoritePuzzleSnapshot = await getDocs(favoritePuzzleCollectionRef);
+      const favoritePuzzleList = favoritePuzzleSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setFavoritePuzzles(favoritePuzzleList);
+    } catch (error) {
+      console.error('Error fetching puzzles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPuzzles();
+    }, [])
+  );
 
   if (loading) {
     return (
@@ -47,68 +54,74 @@ const Fav: React.FC = () => {
     );
   }
 
+  const puzzlesToShow = activeFilter === 'completed' ? completedPuzzles : favoritePuzzles;
+
   return (
-    <ImageBackground
-      source={require('../assets/images/MainBackgroundBlur.png')} // Replace with your actual background image URL
-      style={styles.background}
-      imageStyle={{ opacity: 0.5 }} // Set the background image opacity
-    >
-      <View style={styles.container}>
-        <Text style={styles.header}>Completed Puzzles</Text>
-        <FlatList
-          data={completedPuzzles}
-          keyExtractor={(item) => item.id}
-          numColumns={2} // Display two items per row
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.puzzleItem}>
-              <View style={styles.glassCardContainer}>
-                <View style={styles.glassCard}>
-                  <View style={styles.blurOverlay} />
-                  {item.imageUri && (
-                    <Image
-                      source={{ uri: item.imageUri }}
-                      style={styles.puzzleImage}
-                      resizeMode="cover"
-                    />
-                  )}
-                </View>
-              </View>
+    <View style={styles.backgroundContainer}>
+      <ImageBackground
+        source={require('../assets/images/MainBackgroundBlur.png')}
+        style={styles.background}
+        imageStyle={{ opacity: 0.5 }}
+      >
+        <View style={styles.container}>
+          <View style={styles.filterButtonsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                activeFilter === 'completed' && styles.activeFilterButton,
+              ]}
+              onPress={() => setActiveFilter('completed')}
+            >
+              <Text style={styles.filterButtonText}>Completed</Text>
             </TouchableOpacity>
-          )}
-        />
-        
-        <Text style={styles.header}>Favorite Puzzles</Text>
-        <FlatList
-          data={favoritePuzzles}
-          keyExtractor={(item) => item.id}
-          numColumns={2} // Display two items per row
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.puzzleItem}>
-              <View style={styles.glassCardContainer}>
-                <View style={styles.glassCard}>
-                  <View style={styles.blurOverlay} />
-                  {item.imageUri && (
-                    <Image
-                      source={{ uri: item.imageUri }}
-                      style={styles.puzzleImage}
-                      resizeMode="cover"
-                    />
-                  )}
-                </View>
-              </View>
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                activeFilter === 'favorite' && styles.activeFilterButton,
+              ]}
+              onPress={() => setActiveFilter('favorite')}
+            >
+              <Text style={styles.filterButtonText}>Favorite</Text>
             </TouchableOpacity>
-          )}
-        />
-      </View>
-    </ImageBackground>
+          </View>
+
+          <Text style={styles.header}>
+            {activeFilter === 'completed' ? 'Completed Puzzles' : 'Favorite Puzzles'}
+          </Text>
+
+          <FlatList
+            data={puzzlesToShow}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            contentContainerStyle={styles.listContentContainer}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.puzzleItem}
+                onPress={() => navigation.navigate('LevelSelection', { imageUri: item.imageUri })}
+              >
+                <View style={styles.glassCardContainer}>
+                  <View style={styles.glassCard}>
+                    {item.imageUri && (
+                      <Image
+                        source={{ uri: item.imageUri }}
+                        style={styles.puzzleImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  backgroundContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#1e1e1e',
   },
   background: {
@@ -118,24 +131,59 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    width: '100%',
     padding: 20,
     paddingBottom: 80,
+  },
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background for glass effect
+    alignItems: 'center',
+    backgroundColor: '#1e1e1e',
+  },
+  filterButtonsContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    marginTop: 50,
+    backgroundColor: '#2b2b2b',
+    borderColor: '#3e3e3e',
+    padding: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 6,
+    backgroundColor: '#2b2b2b',
+  },
+  activeFilterButton: {
+    backgroundColor: '#CE662A',
+  },
+  filterButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   header: {
-    fontSize: 28,
+    paddingLeft: 10,
+    fontSize: 24,
     fontWeight: 'bold',
+    marginTop: 20,
     marginBottom: 20,
     color: '#ffffff',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3, // Reduced shadow for a cleaner look
+  },
+  listContentContainer: {
+    paddingBottom: 20,
   },
   puzzleItem: {
     flex: 1,
     marginBottom: 20,
     paddingHorizontal: 10,
     alignItems: 'center',
+    width: '50%',
   },
   glassCardContainer: {
     justifyContent: 'center',
@@ -143,29 +191,29 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   glassCard: {
-    width: 140, // Consistent width for all cards
-    height: 140, // Consistent height for all cards
+    width: 140,
+    height: 140,
     padding: 15,
     borderRadius: 15,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)', // Black with transparency
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    overflow: 'hidden', // To ensure the blur overlay stays within the card
-    justifyContent: 'center',
-  },
-  blurOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Light blur overlay
-    opacity: 0.5, // Reduce opacity to create a blur effect without external libraries
+    overflow: 'hidden',
   },
   puzzleImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 10, // Rounded corners to match the puzzle item style
+    width: 110,
+    height: 110,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: -1, height: -1 },
     shadowOpacity: 0.5,
-    shadowRadius: 4, // Inner shadow to create a carved effect
+    shadowRadius: 4,
+  },
+  puzzleName: {
+    marginTop: 10,
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

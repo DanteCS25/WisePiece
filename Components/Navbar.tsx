@@ -26,7 +26,7 @@ const NavBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
         if (!isFocused) {
             setSelectedTab(route.name as keyof RootTabParamList);
             if (route.name === 'Favorites') {
-                navigation.navigate('Fav');
+                navigation.navigate('Favorites');
             } else {
                 navigation.navigate(route.name);
             }
@@ -61,7 +61,7 @@ const NavBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
                                     route.name === 'Home'
                                         ? 'home-outline'
                                         : route.name === 'Puzzle'
-                                        ? 'toolbox-outline'
+                                        ? 'puzzle-outline'
                                         : route.name === 'Favorites'
                                         ? 'heart-outline'
                                         : 'account-outline'

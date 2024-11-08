@@ -23,7 +23,6 @@ export type RootStackParamList = {
     Profile: undefined;
     Puzzle: undefined;
     Home: undefined;
-    Fav: undefined;
 };
 
 export type RootTabParamList = {
@@ -59,9 +58,8 @@ export default function App() {
                 <Stack.Screen name="Home" component={HomeTabs} />
                 <Stack.Screen name="PuzzleSolving" component={PuzzleSolving} />
                 <Stack.Screen name="LevelSelection" component={LevelSelectionComponent} />
-                <Stack.Screen name="Fav" component={Fav} />
             </Stack.Navigator>
-            <StatusBar style="auto" />
+            <StatusBar style="light" />
         </NavigationContainer>
     );
 }

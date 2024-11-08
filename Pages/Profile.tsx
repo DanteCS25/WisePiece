@@ -85,12 +85,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1e1e1e', // Match the background color for consistency
   },
   background: {
     width: '100%',
     height: '100%',
     position: 'absolute',
+    backgroundColor: '#1e1e1e',
   },
   container: {
     flex: 1,

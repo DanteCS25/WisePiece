@@ -7,6 +7,7 @@ import * as FileSystem from 'expo-file-system';
 import ViewShot from 'react-native-view-shot';
 import axios from 'axios';
 import { addFavoritePuzzle, saveCompletedPuzzle } from '../service';
+import CustomAlert from '../Components/CustomAlert';
 
 // Grid size will be determined dynamically based on level
 let gridSize = 3;
@@ -67,6 +68,10 @@ const PuzzleSolving = () => {
   // Add a new state variable to track if the puzzle is complete
   const [isPuzzleComplete, setIsPuzzleComplete] = useState(false);
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+
   useEffect(() => {
     if (level === Level.EASY) {
       gridSize = 3;
@@ -107,7 +112,9 @@ const PuzzleSolving = () => {
 
   const placePiece = (blockKey: string) => {
     if (!selectedPiece) {
-      Alert.alert('Select a piece first');
+      setAlertTitle('Select a piece first');
+      setAlertMessage('Please select a puzzle piece before placing it.');
+      setAlertVisible(true);
       return;
     }
 
@@ -120,8 +127,9 @@ const PuzzleSolving = () => {
         // Check if all pieces are placed
         const allPlaced = updatedPieces.every(piece => piece.isPlaced);
         if (allPlaced) {
-          Alert.alert('Success', 'All pieces placed! Puzzle is complete.');
-          setIsPuzzleComplete(true); // Update the state to indicate the puzzle is complete
+          setAlertTitle('Success');
+          setAlertMessage('All pieces placed! Puzzle is complete.');
+          setIsPuzzleComplete(true);
           handleSaveCompletedPuzzle(); // Save the completed puzzle to Firestore
         }
 
@@ -129,24 +137,32 @@ const PuzzleSolving = () => {
       });
       setSelectedPiece(null);
     } else {
-      Alert.alert('Incorrect Placement', 'This piece does not fit here');
+      setAlertTitle('Incorrect Placement');
+      setAlertMessage('This piece does not fit here.');
+      setAlertVisible(true);
     }
   };
 
   const handleAddFavorite = async () => {
     try {
       await addFavoritePuzzle(imageUri, 'My Puzzle'); // Provide a puzzle name
-      Alert.alert('Success', 'Puzzle added to favorites!');
+      setAlertTitle('Success');
+      setAlertMessage('Puzzle added to favorites!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to add to favorites');
+      setAlertTitle('Error');
+      setAlertMessage('Failed to add to favorites');
+    } finally {
+      setAlertVisible(true);
     }
   };
 
   const handleSaveCompletedPuzzle = async () => {
     try {
       await saveCompletedPuzzle(imageUri, 'My Puzzle'); // Provide a puzzle name
-     } catch (error) {
-      Alert.alert('Error', 'Failed to add to completed puzzles');
+    } catch (error) {
+      setAlertTitle('Error');
+      setAlertMessage('Failed to add to completed puzzles');
+      setAlertVisible(true);
     }
   };
 
@@ -348,6 +364,12 @@ const PuzzleSolving = () => {
             ))}
         </View>
       </ImageBackground>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        onClose={() => setAlertVisible(false)}
+      />
     </ScrollView>
   );
 };
