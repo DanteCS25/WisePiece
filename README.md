@@ -114,6 +114,18 @@ Make sure to include a `.env.example` file to help others set up the environment
   <img src="./assets/Mockups/Mockup3.png" alt="Mockup 3" width="800" />
 </div>
 
+## Screens
+<div align="center">
+  <img src="./assets/Screens/Login.jpg" alt="Mockup 1" width="200" />
+    <img src="./assets/Screens/Signup.jpg" alt="Mockup 1" width="200" />
+  <img src="./assets/Screens/Home.jpg" alt="Mockup 1" width="200" />
+    <img src="./assets/Screens/Puzzle.jpg" alt="Mockup 1" width="200" />
+      <img src="./assets/Screens/Solving.jpg" alt="Mockup 1" width="200" />
+        <img src="./assets/Screens/LevelSelection.jpg" alt="Mockup 1" width="200" />
+          <img src="./assets/Screens/Profile.jpg" alt="Mockup 1" width="200" />
+            <img src="./assets/Screens/Completed.jpg" alt="Mockup 1" width="200" />
+</div>
+
 ## Usage
 - **Sign Up / Log In**: Create an account or log in to access your puzzles.
 - **Puzzle Selection**: Choose a puzzle from the available options.
