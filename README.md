@@ -31,7 +31,7 @@ WisePiece is a mobile application designed for puzzle enthusiasts. It allows use
 ## Overview
 WisePiece is a mobile app designed to provide an engaging puzzle-solving experience. Users can solve puzzles, upload images, and even analyze completed puzzles using AI technology. It supports different difficulty levels and allows users to save and revisit their favorite puzzles.
 
-##Previous GITHUB
+## Previous GITHUB
 https://github.com/DanteCS25/TimeTravelersMystery.git
 
 ## Technologies and Libraries Used
